@@ -1,27 +1,28 @@
 package com.example.todo3
 
 import android.content.Context
-import android.opengl.Visibility
-import androidx.appcompat.app.AppCompatActivity
+import android.content.DialogInterface
 import android.os.Bundle
-import android.text.Editable
-import android.text.Layout
 import android.view.LayoutInflater
 import android.view.View
+import android.view.inputmethod.InputMethodManager
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
+import androidx.appcompat.app.AppCompatActivity
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.todo3.adapters.MyAdapter
+import com.example.todo3.adapters.todos
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.android.synthetic.main.activity_main.*
 import kotlinx.android.synthetic.main.dialog1.*
 
 class MainActivity : AppCompatActivity() {
     //initializing variables outside the functions to be able to use them inside
-    private var list= ArrayList<String>()
+    private var list= mutableListOf<todos>()
     private val adapter = MyAdapter(this,list)
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -57,7 +58,7 @@ class MainActivity : AppCompatActivity() {
 
 
 
-    fun addtodo(view: View) {
+    fun addtask(view: View) {
 
 
         val  mDialogView = LayoutInflater.from(this).inflate(R.layout.dialog1,null)
@@ -65,23 +66,38 @@ class MainActivity : AppCompatActivity() {
         mBuilder.setView(mDialogView)
         val mDialog = mBuilder.create()
         mDialog.show()
+
+        val editText= mDialog.editTxt
+
+
+
         mDialog.window?.setBackgroundDrawableResource(android.R.color.transparent)
 
         mDialog.dilgaddbtn.setOnClickListener {
 
-            val item:String = mDialog.editTxt.text.toString()
+            val itemtext:String = mDialog.editTxt.text.toString()
 
             mDialog.editTxt.setText("")
-            if (item!=""){
-                list.add(item)
-                adapter.notifyItemInserted(adapter.items.size-1)
+            if (itemtext!=""){
+                val todo = todos(itemtext)
+                adapter.addTodo1(todo)
             }
+            editText.hideKeyboard()
             mDialog.dismiss()
+
         }
 
     }
+    fun View.showKeyboard() {
+        this.requestFocus()
+        val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
+        imm.toggleSoftInput(InputMethodManager.SHOW_FORCED, InputMethodManager.HIDE_IMPLICIT_ONLY)
+    }
 
-
+    fun View.hideKeyboard() {
+        val inputMethodManager = context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        inputMethodManager.hideSoftInputFromWindow(windowToken, 0)
+    }
 
 
     private fun getTodo():String{
@@ -93,11 +109,10 @@ class MainActivity : AppCompatActivity() {
        return text
     }
 
-    fun clearall(view: View) {
+    fun cleardone(view: View) {
         if (list.isNotEmpty()){
-            list.clear()
-            adapter.notifyDataSetChanged()
-            Toast.makeText(this, "view cleared !", Toast.LENGTH_SHORT).show()
+            adapter.deleteDone()
+            Toast.makeText(this, "done todos deleted !", Toast.LENGTH_SHORT).show()
         }
         else Toast.makeText(this, "view is already cleared !", Toast.LENGTH_SHORT).show()
 
