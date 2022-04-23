@@ -1,16 +1,20 @@
-package com.example.todo3.adapters
+package com.example.todo3.backend
 
 import android.content.Context
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.view.ViewParent
-import android.widget.Toast
+import androidx.lifecycle.ViewModelProvider
 import androidx.recyclerview.widget.RecyclerView
+import com.example.todo3.MainActivity
 import com.example.todo3.R
 import kotlinx.android.synthetic.main.custom_row.view.*
 
-class MyAdapter(val context:Context, val items: MutableList<todos>):RecyclerView.Adapter<MyAdapter.MyViewHolder>() {
+class MyAdapter(val context:Context):RecyclerView.Adapter<MyAdapter.MyViewHolder>() {
+
+    var items = mutableListOf<todos>()
+
+
 
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MyViewHolder {
@@ -30,15 +34,19 @@ class MyAdapter(val context:Context, val items: MutableList<todos>):RecyclerView
             checkbox.isChecked = item.checkState
             checkbox.setOnCheckedChangeListener { _, ischecked ->
                 item.checkState = !item.checkState
+                notifyDataSetChanged()
+
+
+
             }
 
         }
 
 
     }
-    fun addTodo1 (todo: todos){
-        items.add(todo)
-        notifyItemInserted(items.size-1)
+    fun addTodo1 (todo: List<todos>){
+        this.items = todo as MutableList<todos>
+        notifyDataSetChanged()
 
     }
 
@@ -48,6 +56,10 @@ class MyAdapter(val context:Context, val items: MutableList<todos>):RecyclerView
             item.checkState
         }
         notifyDataSetChanged()
+
+    }
+
+    fun clearall(){
 
     }
 

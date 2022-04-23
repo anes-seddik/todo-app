@@ -1,33 +1,45 @@
 package com.example.todo3
 
 import android.content.Context
-import android.content.DialogInterface
+import android.icu.text.Transliterator
 import android.os.Bundle
+import android.text.Layout
 import android.view.LayoutInflater
 import android.view.View
 import android.view.inputmethod.InputMethodManager
 import android.widget.Toast
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProvider
+
 import androidx.recyclerview.widget.ItemTouchHelper
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.todo3.adapters.MyAdapter
-import com.example.todo3.adapters.todos
+import com.example.todo3.backend.*
 import com.google.android.material.snackbar.Snackbar
 import kotlinx.android.synthetic.main.activity_main.*
+import kotlinx.android.synthetic.main.custom_row.*
+import kotlinx.android.synthetic.main.custom_row.view.*
 import kotlinx.android.synthetic.main.dialog1.*
 
 class MainActivity : AppCompatActivity() {
     //initializing variables outside the functions to be able to use them inside
-    private var list= mutableListOf<todos>()
-    private val adapter = MyAdapter(this,list)
+
+
+    private lateinit var mViewmodel : todoViewmodel
+
+    private val adapter = MyAdapter(this)
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
+        mViewmodel= ViewModelProvider(this).get(todoViewmodel::class.java)
+        mViewmodel.allNotes.observe(this, Observer {todo ->
+            adapter.addTodo1(todo)
+        })
 
         //set the layout manager
         recyclerxml.layoutManager= LinearLayoutManager(this)
@@ -36,16 +48,13 @@ class MainActivity : AppCompatActivity() {
         //set adapter instance to recyclerview
         recyclerxml.adapter= adapter
 
-        val swipetodelete = object :swipeToDelete(){
+        val swipetodelete = object : swipeToDelete(){
             override fun onSwiped(viewHolder: RecyclerView.ViewHolder, direction: Int) {
                 val position = viewHolder.adapterPosition
-                val deletedtodo = list.get(position)
-
-                list.removeAt(position)
-                adapter.notifyItemRemoved(position)
+                val deletedtodo = adapter.items[position]
+                mViewmodel.deleteNote(deletedtodo)
                 Snackbar.make(recyclerxml,"Are you sure you want to delete this todo?",Snackbar.LENGTH_LONG).setAction("undo", View.OnClickListener {
-                    list.add(position,deletedtodo)
-                    adapter.notifyItemInserted(position)
+                    mViewmodel.addNote(deletedtodo)
                 }).show()
 
             }
@@ -53,6 +62,20 @@ class MainActivity : AppCompatActivity() {
         val itemTouchHelper = ItemTouchHelper(swipetodelete)
 
         itemTouchHelper.attachToRecyclerView(recyclerxml)
+
+    }
+
+    fun update(viewHolder: RecyclerView.ViewHolder){
+        val position = viewHolder.adapterPosition
+        val item = adapter.items[position]
+        R.layout.custom_row
+        checkbox.setOnCheckedChangeListener { _, ischecked ->
+            item.checkState = !item.checkState
+            val newcheck = todos(item.todotitle,item.checkState)
+            adapter.items[position]=newcheck
+            adapter.notifyItemChanged(position)
+            mViewmodel.updateNote(newcheck)
+        }
 
     }
 
@@ -79,8 +102,7 @@ class MainActivity : AppCompatActivity() {
 
             mDialog.editTxt.setText("")
             if (itemtext!=""){
-                val todo = todos(itemtext)
-                adapter.addTodo1(todo)
+                insertToDatabase(itemtext)
             }
             editText.hideKeyboard()
             mDialog.dismiss()
@@ -88,6 +110,16 @@ class MainActivity : AppCompatActivity() {
         }
 
     }
+
+    private fun insertToDatabase(todo: String) {
+        if(todo.isNotEmpty()){
+            val item = todos(todo)
+
+            mViewmodel.addNote(item)
+            Toast.makeText(this, "successfully added to DB", Toast.LENGTH_SHORT).show()
+        }
+    }
+
     fun View.showKeyboard() {
         this.requestFocus()
         val imm = getSystemService(INPUT_METHOD_SERVICE) as InputMethodManager
@@ -100,19 +132,13 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    private fun getTodo():String{
 
-
-        val text:String = editTxt.text.toString()
-
-        editTxt.setText("")
-       return text
-    }
 
     fun cleardone(view: View) {
-        if (list.isNotEmpty()){
-            adapter.deleteDone()
-            Toast.makeText(this, "done todos deleted !", Toast.LENGTH_SHORT).show()
+        if (adapter.items.isNotEmpty()){
+            mViewmodel.deleteAllTodos()
+
+            Toast.makeText(this, "todos deleted !", Toast.LENGTH_SHORT).show()
         }
         else Toast.makeText(this, "view is already cleared !", Toast.LENGTH_SHORT).show()
 

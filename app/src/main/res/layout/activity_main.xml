@@ -65,7 +65,7 @@
             android:layout_weight="1"
             android:layout_gravity="center"
             android:gravity="center"
-            android:text="clear done"
+            android:text="clear all"
             android:maxLines="1"
             android:layout_marginHorizontal="5dp"
             android:onClick="cleardone"
